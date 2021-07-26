@@ -1,25 +1,8 @@
 package com.yash.breakingnews.utilities;
 
-import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -33,7 +16,6 @@ public class NetworkUtils {
 
     public static final int QUERY_PARAM_CODE = 1;
     public static final int COUNTRY_PARAM_CODE = 2;
-    public static final int QUERY_COUNTRY_PARAM_CODE = 3;
 
     private static final String QUERY_PARAM = "q";
     private static final String COUNTRY_PARAM = "country";
@@ -68,15 +50,6 @@ public class NetworkUtils {
             builtUri = Uri.parse(url).buildUpon()
                         .appendQueryParameter(APIKEY_PARAM, APIKEY)
                         .appendQueryParameter(COUNTRY_PARAM, param)
-                        .build();
-        }
-
-        else if(paramCode == QUERY_COUNTRY_PARAM_CODE) {
-            String[] params = param.split(":");
-            builtUri = Uri.parse(url).buildUpon()
-                        .appendQueryParameter(APIKEY_PARAM, APIKEY)
-                        .appendQueryParameter(COUNTRY_PARAM, params[0])
-                        .appendQueryParameter(QUERY_PARAM, params[1])
                         .build();
         }
         URL newsUrl = null;

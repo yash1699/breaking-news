@@ -1,33 +1,31 @@
 package com.yash.breakingnews;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ShareCompat;
-import androidx.loader.app.LoaderManager;
-import androidx.loader.content.AsyncTaskLoader;
-import androidx.loader.content.Loader;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.yash.breakingnews.adapters.NewsArticlesAdapter;
 import com.yash.breakingnews.utilities.NetworkUtils;
+import com.yash.breakingnews.utilities.RequestQueueSingleton;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -47,9 +45,9 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
     private RecyclerView mRecyclerView;
     private NewsArticlesAdapter mAdapter;
 
-    private boolean searchButtonClicked = false;
+    private String mCountryCode;
 
-    private final int NEWS_LOADER_ID = 0;
+    private boolean searchButtonClicked = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,14 +59,34 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
 
         mRecyclerView = findViewById(R.id.rv_news_articles);
-        mRecyclerView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-
         mAdapter = new NewsArticlesAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
+
+        mSearchArticlesButton.setOnClickListener(v -> {
+            hideKeyboard();
+            mSearchArticlesEditText.clearFocus();
+            searchButtonClicked = true;
+            fetchData();
+        });
+        getCountryCode();
+        Log.d("Country", mCountryCode);
         fetchData();
+    }
+
+    private void hideKeyboard() {
+        View view = this.getCurrentFocus();
+        if(view != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    private void getCountryCode() {
+        TelephonyManager tm = (TelephonyManager) this.getSystemService(Context.TELEPHONY_SERVICE);
+        mCountryCode = tm.getNetworkCountryIso();
     }
 
     @Override
@@ -95,8 +113,22 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
 
     private void fetchData() {
         mLoadingIndicator.setVisibility(View.VISIBLE);
-        URL url = NetworkUtils.buildUrl(NetworkUtils.TOP_HEADLINES_ENDPOINT, "in", NetworkUtils.COUNTRY_PARAM_CODE);
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        URL url;
+
+        if(searchButtonClicked) {
+            searchButtonClicked = false;
+            String query = mSearchArticlesEditText.getText().toString();
+            if(TextUtils.isEmpty(query)) {
+                mSearchArticlesEditText.setError("Please enter something you want to search");
+                return;
+            }
+            url = NetworkUtils.buildUrl(NetworkUtils.EVERYTHING_ENDPOINT, query, NetworkUtils.QUERY_PARAM_CODE);
+        }
+
+        else {
+            url = NetworkUtils.buildUrl(NetworkUtils.TOP_HEADLINES_ENDPOINT, mCountryCode, NetworkUtils.COUNTRY_PARAM_CODE);
+        }
+
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.GET,
                 url.toString(),
@@ -114,6 +146,8 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
+                        mLoadingIndicator.setVisibility(View.INVISIBLE);
+                        Toast.makeText(MainActivity.this,"Error occurred", Toast.LENGTH_SHORT).show();
                         Log.d("NewsErr", error.toString());
                     }
                 }) {
@@ -124,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
                 return params;
             }
         };
-        requestQueue.add(jsonObjectRequest);
+        RequestQueueSingleton.getInstance(getApplicationContext()).addToRequestQueue(jsonObjectRequest);
     }
 
     private void setAdapterData(JSONObject apiCallResult) throws JSONException {
