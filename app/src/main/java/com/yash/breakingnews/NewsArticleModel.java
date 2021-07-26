@@ -1,7 +1,5 @@
 package com.yash.breakingnews;
 
-import androidx.lifecycle.ViewModelProvider;
-
 public class NewsArticleModel {
 
     private String mArticleUrl;
