@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">Breaking News</string>
+    <string name="spinner_prompt" >Select a category</string>
+
+    <string-array name="categories_array">
+        <item>""</item>
+        <item>Business</item>
+        <item>Entertainment</item>
+        <item>Sports</item>
+        <item>General</item>
+        <item>Science</item>
+        <item>Technology</item>
+    </string-array>
+    
 </resources>

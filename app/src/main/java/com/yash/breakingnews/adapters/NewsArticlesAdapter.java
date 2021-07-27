@@ -48,7 +48,7 @@ public class NewsArticlesAdapter extends RecyclerView.Adapter<NewsArticlesAdapte
 
     @Override
     public void onBindViewHolder(@NonNull NewsArticlesAdapter.NewsArticleViewHolder holder, int position) {
-        NewsArticleModel newsArticleData = mNewsArticleData.get(position);
+        NewsArticleModel newsArticleData = mNewsArticleData.get(holder.getAdapterPosition());
         holder.mArticleTitle.setText(newsArticleData.getArticleTitle());
         holder.mArticleSource.setText(newsArticleData.getArticleSource());
         Picasso.get().load(newsArticleData.getArticleImageUrl()).into(holder.mArticleImage);

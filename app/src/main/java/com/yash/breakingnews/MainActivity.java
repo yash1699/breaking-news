@@ -13,9 +13,11 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
@@ -41,13 +43,16 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
     private EditText mSearchArticlesEditText;
     private ImageButton mSearchArticlesButton;
     private ProgressBar mLoadingIndicator;
+    private Spinner mCategorySpinner;
 
     private RecyclerView mRecyclerView;
     private NewsArticlesAdapter mAdapter;
 
     private String mCountryCode;
+    private String mSelectedCategory = "";
 
     private boolean searchButtonClicked = false;
+    private boolean categorySelected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
 
         mSearchArticlesEditText = findViewById(R.id.et_search_article);
         mSearchArticlesButton = findViewById(R.id.ib_search_article);
+        mCategorySpinner = findViewById(R.id.sp_categories);
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
 
         mRecyclerView = findViewById(R.id.rv_news_articles);
@@ -64,6 +70,23 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
         mRecyclerView.setLayoutManager(layoutManager);
         mAdapter = new NewsArticlesAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.setHasFixedSize(false);
+
+        mCategorySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                mSelectedCategory = parent.getItemAtPosition(position).toString().toLowerCase();
+                if(mSelectedCategory.equals("")){
+                    fetchData();
+                }
+                categorySelected = true;
+                fetchData();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
 
         mSearchArticlesButton.setOnClickListener(v -> {
             hideKeyboard();
@@ -74,6 +97,16 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
         getCountryCode();
         Log.d("Country", mCountryCode);
         fetchData();
+    }
+
+    private void showRecyclerView() {
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
+        mRecyclerView.setVisibility(View.VISIBLE);
+    }
+
+    private void hideRecyclerView() {
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        mLoadingIndicator.setVisibility(View.VISIBLE);
     }
 
     private void hideKeyboard() {
@@ -112,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
     }
 
     private void fetchData() {
-        mLoadingIndicator.setVisibility(View.VISIBLE);
+        hideRecyclerView();
         URL url;
 
         if(searchButtonClicked) {
@@ -122,7 +155,17 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
                 mSearchArticlesEditText.setError("Please enter something you want to search");
                 return;
             }
-            url = NetworkUtils.buildUrl(NetworkUtils.EVERYTHING_ENDPOINT, query, NetworkUtils.QUERY_PARAM_CODE);
+            if(mSelectedCategory.equals("")){
+                url = NetworkUtils.buildUrl(NetworkUtils.EVERYTHING_ENDPOINT, query, NetworkUtils.QUERY_PARAM_CODE);
+            }
+            else{
+                url = NetworkUtils.buildUrl(NetworkUtils.TOP_HEADLINES_ENDPOINT, mSelectedCategory+ ":" +query + ":" +mCountryCode, NetworkUtils.CATEGORY_QUERY_PARAM_CODE);
+            }
+        }
+
+        else if(categorySelected) {
+            categorySelected = false;
+            url = NetworkUtils.buildUrl(NetworkUtils.TOP_HEADLINES_ENDPOINT, mSelectedCategory+ ":" +mCountryCode, NetworkUtils.CATEGORY_PARAM_CODE);
         }
 
         else {
@@ -178,6 +221,6 @@ public class MainActivity extends AppCompatActivity implements NewsArticlesAdapt
         }
 
         mAdapter.setNewsArticleData(articlesData);
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
+        showRecyclerView();
     }
 }
